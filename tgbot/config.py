@@ -106,7 +106,6 @@ class Config:
     """
 
     tg_bot: TgBot
-    openai_api_key: str
     misc: Miscellaneous
     redis: Optional[RedisConfig] = None
 
@@ -126,7 +125,6 @@ def load_config(path: str = None) -> Config:
 
     return Config(
         tg_bot=TgBot.from_env(env),
-        openai_api_key=env.str("OPENAI_API_KEY"),  # openai_api_key
         # db=DbConfig.from_env(env),
         # redis=RedisConfig.from_env(env),
         misc=Miscellaneous(),
