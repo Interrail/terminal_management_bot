@@ -1,11 +1,18 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
-WORKDIR /usr/src/app/bot
+# Install required packages for locales
+RUN apt-get update && apt-get install -y locales
+RUN apt-get update && apt-get install -y locales
+RUN locale-gen ru_RU.UTF-8
+ENV LANG ru_RU.UTF-8
+ENV LANGUAGE ru_RU:ru
+ENV LC_ALL ru_RU.UTF-8
 
-COPY requirements.txt /usr/src/app/bot
+# Continue with the rest of your Docker setup
+WORKDIR /usr/src/app
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
 
-RUN pip install -r /usr/src/app/bot/requirements.txt
-
-COPY . /usr/src/app/bot
 
 CMD [ "python3", "bot.py" ]

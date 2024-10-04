@@ -5,7 +5,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, InlineKeyboardButton, ReplyKeyboardRemove
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from aiogram_calendar import SimpleCalendar, get_user_locale, SimpleCalendarCallback
+from aiogram_calendar import SimpleCalendar, SimpleCalendarCallback
 
 from infrastructure.api.terminal import TerminalAPI
 from tgbot.keyboards.inline import start_keyboard, container_type_keyboard, \
@@ -13,8 +13,8 @@ from tgbot.keyboards.inline import start_keyboard, container_type_keyboard, \
 from tgbot.misc.states import TerminalImport
 
 user_router = Router()
-API_URL = "https://terminal.danke.uz"
-PER_PAGE = 8
+API_URL = "https://api.trains.uz"
+PER_PAGE = 40
 
 
 def create_paginated_keyboard(items: list, current_page: int, total_items: int,
@@ -49,10 +49,12 @@ async def get_current_message(state: FSMContext) -> str:
         'date': 'Дата',
         'selected_service_names': 'Выбранные услуги'
     }
+
     message_parts = [
         f"{translations.get(key, key).capitalize()}: <b>{value}</b>"
         for key, value in data.items()
         if key in translations
+
     ]
     return "\n".join(message_parts)
 
@@ -92,11 +94,12 @@ async def get_container_type(call: CallbackQuery, state: FSMContext):
 
 @user_router.message(TerminalImport.container_name)
 async def get_container_name(message: Message, state: FSMContext):
-    if not re.match(r'^[A-Za-z]{4}\d{7}$', message.text):
+    clean_text = re.sub(r'\s+', '', message.text)
+    if not re.match(r'^[A-Za-z]{4}\d{7}$', clean_text):
         await message.answer("Номер контейнера должен быть 11 символов: первые 4 буквы, затем 7 цифр.")
         return
 
-    await state.update_data(container_name=message.text.upper())
+    await state.update_data(container_name=clean_text.upper())
 
     await state.set_state(TerminalImport.container_state)
     await update_message(message, state, "Контейнер:", reply_markup=container_loading_keyboard.as_markup())
@@ -139,10 +142,18 @@ async def show_clients_list(message: Message | CallbackQuery, state: FSMContext,
     )
 
 
+
+
 @user_router.callback_query(lambda c: c.data.startswith("page_"))
 async def handle_pagination(callback: CallbackQuery, state: FSMContext):
     page = int(callback.data.split("_")[1])
     await show_clients_list(callback, state, page)
+    await callback.answer()
+
+@user_router.callback_query(lambda c: c.data.startswith("servicepage_"))
+async def handle_pagination(callback: CallbackQuery, state: FSMContext):
+    page = int(callback.data.split("_")[1])
+    await show_services_list(callback, state, page)
     await callback.answer()
 
 
@@ -167,7 +178,7 @@ async def handle_customer_owner(message: Message, state: FSMContext):
 @user_router.callback_query(SimpleCalendarCallback.filter(), TerminalImport.date)
 async def process_simple_calendar(callback_query: CallbackQuery, callback_data: SimpleCalendarCallback,
                                   state: FSMContext):
-    calendar = SimpleCalendar(locale=await get_user_locale(callback_query.from_user), show_alerts=True)
+    calendar = SimpleCalendar(show_alerts=True)
     selected, date = await calendar.process_selection(callback_query, callback_data)
     if selected:
         await state.update_data(date=date)
@@ -217,21 +228,21 @@ def create_services_keyboard(services: list, current_page: int, total_services: 
         service_name = f"{service['service_type']['name']}"
 
         button_text = f"✅ {service_name}" if is_selected else service_name
-        keyboard.button(text=button_text, callback_data=f"service_{service_name}___{service_id}")
+        keyboard.button(text=button_text, callback_data=f"ss_{service_name}___{service_id}")
 
     total_pages = (total_services - 1) // PER_PAGE + 1
     if current_page > 1:
-        keyboard.button(text="⬅️ Назад", callback_data=f"page_{current_page - 1}")
+        keyboard.button(text="⬅️ Назад", callback_data=f"servicepage_{current_page - 1}")
     if current_page < total_pages:
-        keyboard.button(text="Вперед ➡️", callback_data=f"page_{current_page + 1}")
+        keyboard.button(text="Вперед ➡️", callback_data=f"servicepage_{current_page + 1}")
 
-    keyboard.button(text="Подтвердить выбор", callback_data="confirm_services")
+    keyboard.button(text="Подтвердить ✅", callback_data="confirm_services")
     keyboard.button(text="◀️ Назад", callback_data="back")
     keyboard.adjust(2)
     return keyboard
 
 
-@user_router.callback_query(lambda c: c.data.startswith("service_"), F.data != "back")
+@user_router.callback_query(lambda c: c.data.startswith("ss_"), F.data != "back")
 async def handle_service_selection(callback_query: CallbackQuery, state: FSMContext):
     service_id = int(callback_query.data.split("___")[1])
     service_name = callback_query.data.split("___")[0].split("_")[-1]

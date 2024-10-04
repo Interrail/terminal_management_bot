@@ -2,7 +2,7 @@ from aiogram.client.session import aiohttp
 
 
 class TerminalAPI:
-    API_URL = "https://terminal.danke.uz/"
+    API_URL = "https://api.trains.uz/"
     PER_PAGE = 8
 
     async def fetch_data(self, url: str, params: dict = None) -> tuple[list, int]:
