@@ -37,7 +37,7 @@ async def get_document(message: Message, state: FSMContext):
             f"Дата прибытия: <b>{container['entry_time']}</b>"
         ]
 
-        for service in container['active_services']:
+        for service in container['services']:
             response_parts.append(f"Услуга: <b>{service['service_type']['name']}</b>")
 
         response_message = "\n".join(response_parts)

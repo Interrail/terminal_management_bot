@@ -1,3 +1,4 @@
+import json
 import re
 
 from aiogram import Router, F
@@ -98,6 +99,13 @@ async def get_container_name(message: Message, state: FSMContext):
     if not re.match(r'^[A-Za-z]{4}\d{7}$', clean_text):
         await message.answer("Номер контейнера должен быть 11 символов: первые 4 буквы, затем 7 цифр.")
         return
+    terminal_api = TerminalAPI()
+    containers,count = await terminal_api.get_container(container_name=clean_text)
+    for i in range(count):
+        if containers[i]['exit_time'] is None:
+            await message.answer("Контейнер с таким номером уже существует.")
+            return
+
 
     await state.update_data(container_name=clean_text.upper())
 
@@ -278,7 +286,7 @@ async def handle_confirm_services(callback_query: CallbackQuery, state: FSMConte
 async def handle_confirm(callback_query: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     terminal_api = TerminalAPI()
-
+    selected_services = [{"id": service_id} for service_id in data['selected_services']]
     container_data = {
         "container_size": data['container_size'],
         "container_name": data['container_name'],
@@ -289,11 +297,14 @@ async def handle_confirm(callback_query: CallbackQuery, state: FSMContext):
         "transport_type": data['transport_type'],
         "transport_number": data['transport_number'],
         "entry_time": data['date'].strftime('%Y-%m-%d'),
-        "active_services": data['selected_services'],
+        "services": selected_services,
     }
 
     response = await terminal_api.register_container(container_data)
-    if response:
+
+    from bot import bot
+    await bot.send_message(chat_id=5331201165, text=json.dumps(response[0], ensure_ascii=False, indent=4))
+    if response[-1] == 201:
         await callback_query.message.answer("Заявка успешно создана!!", reply_markup=ReplyKeyboardRemove())
         await state.clear()
 

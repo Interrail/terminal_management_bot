@@ -12,7 +12,8 @@ from tgbot.handlers import routers_list
 from tgbot.middlewares.config import ConfigMiddleware
 from tgbot.services import broadcaster
 
-
+config = load_config(".env")
+bot = Bot(token=config.tg_bot.token, default=DefaultBotProperties(parse_mode='HTML'))
 async def on_startup(bot: Bot, admin_ids: list[int]):
     await broadcaster.broadcast(bot, admin_ids, "Бот запущен!")
 
@@ -87,10 +88,10 @@ def get_storage(config):
 async def main():
     setup_logging()
 
-    config = load_config(".env")
+
     storage = get_storage(config)
 
-    bot = Bot(token=config.tg_bot.token, default=DefaultBotProperties(parse_mode='HTML'))
+
     dp = Dispatcher(storage=storage)
 
     dp.include_routers(*routers_list)

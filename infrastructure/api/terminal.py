@@ -37,19 +37,20 @@ class TerminalAPI:
             params={'container_name': container_name}
         )
 
-    async def register_container(self, data: dict) -> bool:
+    async def register_container(self, data: dict) -> tuple[dict, int]:
         try:
             async with aiohttp.ClientSession() as session:
                 headers = {'Content-Type': 'application/json'}
                 async with session.post(f"{self.API_URL}containers/container_visit_register/", json=data,
                                         headers=headers) as resp:
                     resp_json = await resp.json()
-                    return resp.status == 201
+
+                    return resp_json, resp.status
         except aiohttp.ClientError as e:
             print(f"Client error occurred: {e}")
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
-        return False
+        return {}, 500
 
     async def add_photo(self, container_id: int, data: aiohttp.FormData) -> bool:
         try:
