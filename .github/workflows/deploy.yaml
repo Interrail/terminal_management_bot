@@ -1,0 +1,53 @@
+name: Build and Push Docker Image to Docker Hub
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+jobs:
+  build-image:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      
+    - name: Set Tag in evn variable
+      run: |
+        echo "${GITHUB_SHA:0:7}" > TAG
+        echo "docker.interrail.uz:7007/${{ github.event.repository.name }}" > IMAGE_NAME
+      
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag  $(cat IMAGE_NAME):$(cat TAG)
+      
+    - name: Docker Login
+      run: docker login docker.interrail.uz:7007 -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Image push
+      run: docker push  $(cat IMAGE_NAME):$(cat TAG)
+    
+ 
+  update-gitops-manifest:
+    needs: build-image
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      name: GitOps - Checkout
+      with:
+        repository: Interrail/devops
+        ref: 'main'
+        token: ${{ secrets.GITOPS_TOKEN }}
+        fetch-depth: 0
+        path: devops
+
+    - name: Update GitOps Manifest
+      run: |
+        echo "${GITHUB_SHA:0:7}" > TAG
+        sed -i "s|image: docker.interrail.uz:7007/${{ github.event.repository.name }}:[^[:space:]]*|image: docker.interrail.uz:7007/${{ github.event.repository.name }}:$(cat TAG)|" ./devops/terminal/terminal_bot/terminal_bot.yml
+  
+    - name: Commit and Push Changes
+      run: |
+        git -C devops config user.name "${{ github.actor }}"
+        git -C devops config user.email "${{ github.event_name }}@users.noreply.github.com"
+        git -C devops add .
+        git -C devops commit -m "Update Docker Termina bot $(cat TAG)"
+        git -C devops push
