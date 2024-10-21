@@ -99,6 +99,7 @@ async def get_container_name(message: Message, state: FSMContext):
     if not re.match(r'^[A-Za-z]{4}\d{7}$', clean_text):
         await message.answer("Номер контейнера должен быть 11 символов: первые 4 буквы, затем 7 цифр.")
         return
+
     terminal_api = TerminalAPI()
     containers,count = await terminal_api.get_container(container_name=clean_text)
     for i in range(count):
