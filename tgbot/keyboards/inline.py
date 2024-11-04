@@ -6,9 +6,9 @@ start_keyboard = InlineKeyboardMarkup(
         [
             InlineKeyboardButton(text="Приём 📥", callback_data="import"),
         ],
-        # [
-        #     InlineKeyboardButton(text="Выдача 📤", callback_data="export"),
-        # ],
+        [
+            InlineKeyboardButton(text="Отправка 📤", callback_data="export"),
+        ],
     ]
 )
 
@@ -43,3 +43,8 @@ confirmation_keyboard.button(text="Назад", callback_data="back")
 
 back_keyboard = InlineKeyboardBuilder()
 back_keyboard.button(text="◀️ Назад", callback_data="back")
+
+
+yes_no_keyboard = InlineKeyboardBuilder()
+yes_no_keyboard.button(text="Да", callback_data="yes")
+yes_no_keyboard.button(text="Нет", callback_data="no")

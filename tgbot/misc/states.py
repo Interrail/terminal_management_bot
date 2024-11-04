@@ -17,6 +17,7 @@ class TerminalImport(StatesGroup):
     selected_services = State()
     selected_service_names = State()
     confirmation = State()
+    add_photo = State()
 
 
 class TerminalDocument(StatesGroup):
